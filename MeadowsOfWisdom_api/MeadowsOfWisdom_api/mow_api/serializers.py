@@ -3,23 +3,19 @@ from rest_framework import serializers
 
 
 class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
 
     def create(self, validated_data):
-        user = User.objects.create_user(
-            validated_data['username'],
-            validated_data['password']
+        return User.objects.create_user(
+            username=validated_data["username"], password=validated_data["password"]
         )
-        user.set_password(validated_data['password'])
-        user.save()
-
-        return user
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'password']
+        fields = ["id", "username", "password"]
 
 
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
-        fields = ['id', 'name']
+        fields = ["id", "name"]
