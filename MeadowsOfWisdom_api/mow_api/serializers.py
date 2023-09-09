@@ -1,5 +1,8 @@
 from django.contrib.auth.models import User, Group
 from rest_framework import serializers
+from mow_api.models import FunFact
+
+
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -19,3 +22,13 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ["id", "name"]
+
+
+class FunFactSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = FunFact
+        fields = ["id", "fact_text", "upvote",
+                  "downvote", "created_at", "updated_at"]
+        read_only_fields = ["id", "upvote",
+                            "downvote",  "created_at", "updated_at"]
