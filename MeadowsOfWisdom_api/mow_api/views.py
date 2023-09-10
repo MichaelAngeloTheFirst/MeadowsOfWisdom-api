@@ -1,7 +1,17 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User, Group
 from rest_framework import viewsets, permissions, generics, status, response
-from MeadowsOfWisdom_api.mow_api.serializers import UserSerializer, GroupSerializer
+from mow_api.serializers import UserSerializer, GroupSerializer, FunFactSerializer
+from mow_api.models import FunFact
+
+
+class ReadOnlyOrAuthor(permissions.IsAuthenticatedOrReadOnly):
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True and self.has_permission(request, view)
+
+        return obj.author == request.user and self.has_permission(request, view)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -41,3 +51,16 @@ class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+class FunFactViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows FunFacts to be viewed.
+    """
+
+    queryset = FunFact.objects.all()
+    serializer_class = FunFactSerializer
+    permission_classes = [ReadOnlyOrAuthor]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)

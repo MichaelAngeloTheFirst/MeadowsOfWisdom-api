@@ -14,11 +14,10 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.urls import path, include, re_path
-from rest_framework import permissions
+from django.urls import path, include
 from django.contrib import admin
 from rest_framework import routers
-from MeadowsOfWisdom_api.mow_api import views
+from mow_api import views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -26,17 +25,17 @@ from rest_framework_simplejwt.views import (
 )
 
 router = routers.DefaultRouter()
-router.register(r"users", views.UserViewSet)
-router.register(r"groups", views.GroupViewSet)
+router.register(r"funfacts", views.FunFactViewSet)
 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include(router.urls)),
+    path("api/", include(router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/register/", views.CreateUserViewSet.as_view(), name="register"),
+
 ]

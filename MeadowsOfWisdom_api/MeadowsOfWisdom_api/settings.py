@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "corsheaders",
+    "mow_api",
 ]
 
 REST_FRAMEWORK = {
