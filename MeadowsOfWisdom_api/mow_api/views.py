@@ -14,48 +14,29 @@ class ReadOnlyOrAuthor(permissions.IsAuthenticatedOrReadOnly):
         return obj.author == request.user and self.has_permission(request, view)
 
 
+class IsPostRequest(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        return request.method == "POST"
+
+
 class UserViewSet(viewsets.ModelViewSet):
     """
-    API endpoint that allows users to be viewed or edited.
+    API endpoint that allows to perform actions on users.
     """
 
     queryset = User.objects.all().order_by("-date_joined")
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-
-class CreateUserViewSet(generics.CreateAPIView):
-    """
-    API endpoint that creates users.
-    """
-
-    queryset = User.objects.all()
-    permission_classes = [permissions.AllowAny]  # Or anon users can't register
-    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated | IsPostRequest]
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return response.Response(
-            {"message": "success"}, status=status.HTTP_201_CREATED, headers=headers
-        )
-
-
-class GroupViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-
-    queryset = Group.objects.all()
-    serializer_class = GroupSerializer
-    permission_classes = [permissions.IsAuthenticated]
+        super().create(request, *args, **kwargs)
+        return response.Response({"message": "successful"}, status=status.HTTP_201_CREATED)
 
 
 class FunFactViewSet(viewsets.ModelViewSet):
     """
-    API endpoint that allows FunFacts to be viewed.
+    API endpoint that allows to perform actions on fun facts.
     """
 
     queryset = FunFact.objects.all()

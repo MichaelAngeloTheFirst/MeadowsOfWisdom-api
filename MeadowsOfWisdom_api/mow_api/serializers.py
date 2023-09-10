@@ -3,8 +3,6 @@ from rest_framework import serializers
 from mow_api.models import FunFact
 
 
-
-
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 

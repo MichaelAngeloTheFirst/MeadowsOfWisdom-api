@@ -26,7 +26,8 @@ from rest_framework_simplejwt.views import (
 
 router = routers.DefaultRouter()
 router.register(r"funfacts", views.FunFactViewSet)
-
+router.register(r"register", views.UserViewSet)
+router.register(r"users", views.UserViewSet)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -36,6 +37,4 @@ urlpatterns = [
     path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("api/register/", views.CreateUserViewSet.as_view(), name="register"),
-
 ]
