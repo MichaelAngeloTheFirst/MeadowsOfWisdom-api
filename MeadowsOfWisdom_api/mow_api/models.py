@@ -1,5 +1,5 @@
-from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
 
 
 class TimeTrackedModel(models.Model):
@@ -19,8 +19,7 @@ class Reaction(models.Model):
 
 
 class FunFact(TimeTrackedModel, Reaction):
-    author = models.ForeignKey(
-        User, related_name='facts', on_delete=models.CASCADE)
+    author = models.ForeignKey(User, related_name="facts", on_delete=models.CASCADE)
     fact_text = models.TextField()
 
     class Meta:
@@ -35,10 +34,8 @@ class FunFact(TimeTrackedModel, Reaction):
 
 
 class FunFactComment(TimeTrackedModel, Reaction):
-    author = models.ForeignKey(
-        User, related_name='comments', on_delete=models.CASCADE)
-    fact = models.ForeignKey(
-        FunFact, related_name='comments', on_delete=models.CASCADE)
+    author = models.ForeignKey(User, related_name="comments", on_delete=models.CASCADE)
+    fact = models.ForeignKey(FunFact, related_name="comments", on_delete=models.CASCADE)
     comment_text = models.TextField()
 
     def __str__(self) -> str:

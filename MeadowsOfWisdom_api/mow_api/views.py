@@ -1,12 +1,10 @@
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User, Group
-from rest_framework import viewsets, permissions, generics, status, response
-from mow_api.serializers import UserSerializer, GroupSerializer, FunFactSerializer
+from django.contrib.auth.models import User
 from mow_api.models import FunFact
+from mow_api.serializers import (FunFactSerializer, UserSerializer)
+from rest_framework import permissions, response, status, viewsets
 
 
 class ReadOnlyOrAuthor(permissions.IsAuthenticatedOrReadOnly):
-
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True and self.has_permission(request, view)
@@ -15,7 +13,6 @@ class ReadOnlyOrAuthor(permissions.IsAuthenticatedOrReadOnly):
 
 
 class IsPostRequest(permissions.BasePermission):
-
     def has_permission(self, request, view):
         return request.method == "POST"
 
@@ -31,7 +28,9 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         super().create(request, *args, **kwargs)
-        return response.Response({"message": "successful"}, status=status.HTTP_201_CREATED)
+        return response.Response(
+            {"message": "successful"}, status=status.HTTP_201_CREATED
+        )
 
 
 class FunFactViewSet(viewsets.ModelViewSet):
