@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import Q, Count, F
 
 
 class TimeTrackedModel(models.Model):
@@ -33,10 +34,39 @@ class FunFact(TimeTrackedModel, Reaction):
         return self.fact_text
 
 
-class FunFactComment(TimeTrackedModel, Reaction):
+class FunFactComment(TimeTrackedModel):
     author = models.ForeignKey(User, related_name="comments", on_delete=models.CASCADE)
     fact = models.ForeignKey(FunFact, related_name="comments", on_delete=models.CASCADE)
+    parent = models.ForeignKey(
+        "self", related_name="replies", on_delete=models.CASCADE, null=True, blank=True
+    )
     comment_text = models.TextField()
+
+    def count_votes(self):
+        upvote_count = self.votes_fact.filter(vote="upvote").count()
+        downvote_count = self.votes_fact.filter(vote="downvote").count()
+        return upvote_count - downvote_count
 
     def __str__(self) -> str:
         return self.comment_text
+
+
+class FunFactVote(models.Model):
+    author = models.ForeignKey(
+        User, related_name="votes_author", on_delete=models.CASCADE
+    )
+    fact_comment = models.ForeignKey(
+        FunFactComment, related_name="votes_fact", on_delete=models.CASCADE
+    )
+
+    class VoteType(models.TextChoices):
+        UPVOTE = "upvote"
+        DOWNVOTE = "downvote"
+
+    vote = models.CharField(max_length=10, choices=VoteType.choices)
+
+    class Meta:
+        unique_together = ["author", "fact_comment"]
+
+    def __str__(self) -> str:
+        return self.vote

@@ -1,5 +1,5 @@
 from django.contrib.auth.models import Group, User
-from mow_api.models import FunFact
+from mow_api.models import FunFact, FunFactComment
 from rest_framework import serializers
 
 
@@ -44,4 +44,43 @@ class FunFactSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        
+
+
+class FunFactCommentSerializer(serializers.ModelSerializer):
+    parent_id = serializers.IntegerField(source="parent.id", allow_null=True)
+    username = serializers.CharField(source="author.username", read_only=True)
+
+    class Meta:
+        model = FunFactComment
+        fields = [
+            "id",
+            "parent_id",
+            "username",
+            "comment_text",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class FunFactvoteSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="author.username", read_only=True)
+    fact_id = serializers.IntegerField(source="fact.id", read_only=True)
+    vote_value = serializers.SerializerMethodField(method_name="count_votes", read_only=True)
+
+    class Meta:
+        model = FunFact
+        fields = [
+            "id",
+            "fact_id",
+            "username",
+            "vote",
+            "vote_value",
+        ]
+        read_only_fields = [
+            "id",
+        ]
