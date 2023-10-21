@@ -1,9 +1,11 @@
 from django.contrib.auth.models import User
-from mow_api.models import FunFact, FunFactComment
+from mow_api.models import FunFact, FunFactComment, FunFactVote
 from mow_api.serializers import (
     FunFactSerializer,
     UserSerializer,
     FunFactCommentSerializer,
+    FunFactVoteSerializer,
+    VoteRelatedField,
 )
 from rest_framework import permissions, response, status, viewsets
 from django.shortcuts import get_object_or_404
@@ -98,22 +100,23 @@ class CommentsViewSet(viewsets.ModelViewSet):
 
 
 class VotesViewSet(viewsets.ModelViewSet):
-    queryset = FunFact.objects.all()
-    serializer_class = FunFactSerializer
+    queryset = FunFactVote.objects.all()
+    serializer_class = FunFactVoteSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         kwargs = {}
-        kwargs["fact"] = self.fact
+        kwargs["vote_target"] = self.vote_target
         kwargs["author"] = self.author
         kwargs["vote"] = self.vote
 
+    # TO DO: fix this property, consider urls
     @property
-    def fact(self):
-        fact_id = self.kwargs.get("fact_id")
-        if fact_id is None:
+    def vote_target(self):
+        target_id = self.kwargs.get("target_id")
+        if target_id is None:
             return None
-        return get_object_or_404(FunFact, pk=fact_id)
+        return get_object_or_404(VoteRelatedField, pk=target_id)
 
     @property
     def author(self):

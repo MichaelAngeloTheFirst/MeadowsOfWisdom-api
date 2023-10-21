@@ -1,5 +1,5 @@
 from django.contrib.auth.models import Group, User
-from mow_api.models import FunFact, FunFactComment
+from mow_api.models import FunFact, FunFactComment, FunFactVote
 from rest_framework import serializers
 
 
@@ -49,6 +49,9 @@ class FunFactSerializer(serializers.ModelSerializer):
 class FunFactCommentSerializer(serializers.ModelSerializer):
     parent_id = serializers.IntegerField(source="parent.id", allow_null=True)
     username = serializers.CharField(source="author.username", read_only=True)
+    count_votes = serializers.IntegerField(read_only=True)
+    # field to use on  store output of method from models which returns all votes
+    # all_votes = serializers.ReadOnlyField(source="get_votes")
 
     class Meta:
         model = FunFactComment
@@ -56,6 +59,8 @@ class FunFactCommentSerializer(serializers.ModelSerializer):
             "id",
             "parent_id",
             "username",
+            "count_votes",
+            "all_votes",
             "comment_text",
             "created_at",
             "updated_at",
@@ -67,19 +72,28 @@ class FunFactCommentSerializer(serializers.ModelSerializer):
         ]
 
 
-class FunFactvoteSerializer(serializers.ModelSerializer):
+class VoteRelatedField(serializers.RelatedField):
+    def to_representation(self, value):
+        if isinstance(value, FunFact):
+            serializer = FunFactSerializer(value)
+        elif isinstance(value, FunFactComment):
+            serializer = FunFactCommentSerializer(value)
+        else:
+            raise Exception("Unexpected type of tagged object")
+        return serializer.data
+
+
+class FunFactVoteSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="author.username", read_only=True)
-    fact_id = serializers.IntegerField(source="fact.id", read_only=True)
-    vote_value = serializers.SerializerMethodField(method_name="count_votes", read_only=True)
+    vote_target = VoteRelatedField(read_only=True)
 
     class Meta:
-        model = FunFact
+        model = FunFactVote
         fields = [
             "id",
-            "fact_id",
             "username",
+            "vote_target",
             "vote",
-            "vote_value",
         ]
         read_only_fields = [
             "id",

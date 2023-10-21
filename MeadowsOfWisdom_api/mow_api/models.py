@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import Q, Count, F
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 
 class TimeTrackedModel(models.Model):
@@ -19,9 +21,31 @@ class Reaction(models.Model):
         abstract = True
 
 
+class FunFactVote(models.Model):
+    author = models.ForeignKey(
+        User, related_name="votes_author", on_delete=models.CASCADE
+    )
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    tagged_object = GenericForeignKey("content_type", "object_id")
+
+    class VoteType(models.TextChoices):
+        UPVOTE = "upvote"
+        DOWNVOTE = "downvote"
+
+    vote = models.CharField(max_length=10, choices=VoteType.choices)
+
+    class Meta:
+        unique_together = ["author", "content_type", "object_id"]
+
+    def __str__(self) -> str:
+        return self.vote
+
+
 class FunFact(TimeTrackedModel, Reaction):
     author = models.ForeignKey(User, related_name="facts", on_delete=models.CASCADE)
     fact_text = models.TextField()
+    tags = GenericRelation(FunFactVote)
 
     class Meta:
         verbose_name = "Fun Fact"
@@ -41,32 +65,16 @@ class FunFactComment(TimeTrackedModel):
         "self", related_name="replies", on_delete=models.CASCADE, null=True, blank=True
     )
     comment_text = models.TextField()
+    tags = GenericRelation(FunFactVote)
 
     def count_votes(self):
         upvote_count = self.votes_fact.filter(vote="upvote").count()
         downvote_count = self.votes_fact.filter(vote="downvote").count()
         return upvote_count - downvote_count
 
+    # @property
+    # def get_votes(self):
+    #     return self.votes_fact.all()
+
     def __str__(self) -> str:
         return self.comment_text
-
-
-class FunFactVote(models.Model):
-    author = models.ForeignKey(
-        User, related_name="votes_author", on_delete=models.CASCADE
-    )
-    fact_comment = models.ForeignKey(
-        FunFactComment, related_name="votes_fact", on_delete=models.CASCADE
-    )
-
-    class VoteType(models.TextChoices):
-        UPVOTE = "upvote"
-        DOWNVOTE = "downvote"
-
-    vote = models.CharField(max_length=10, choices=VoteType.choices)
-
-    class Meta:
-        unique_together = ["author", "fact_comment"]
-
-    def __str__(self) -> str:
-        return self.vote
