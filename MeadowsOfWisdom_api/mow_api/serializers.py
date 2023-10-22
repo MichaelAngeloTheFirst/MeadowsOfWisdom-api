@@ -1,5 +1,5 @@
 from django.contrib.auth.models import Group, User
-from mow_api.models import FunFact, FunFactComment, FunFactVote
+from mow_api.models import FunFact, FunFactComment
 from rest_framework import serializers
 
 
@@ -24,6 +24,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
 class FunFactSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="author.username")
+    count_votes = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = FunFact
@@ -31,6 +32,7 @@ class FunFactSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "fact_text",
+            "count_votes",
             "upvote",
             "downvote",
             "created_at",
@@ -39,6 +41,7 @@ class FunFactSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "username",
+            "count_votes",
             "upvote",
             "downvote",
             "created_at",
@@ -83,18 +86,18 @@ class VoteRelatedField(serializers.RelatedField):
         return serializer.data
 
 
-class FunFactVoteSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source="author.username", read_only=True)
-    vote_target = VoteRelatedField(read_only=True)
+# class FunFactVoteSerializer(serializers.ModelSerializer):
+#     username = serializers.CharField(source="author.username", read_only=True)
+#     vote_target = VoteRelatedField(read_only=True)
 
-    class Meta:
-        model = FunFactVote
-        fields = [
-            "id",
-            "username",
-            "vote_target",
-            "vote",
-        ]
-        read_only_fields = [
-            "id",
-        ]
+#     class Meta:
+#         model = FunFactVote
+#         fields = [
+#             "id",
+#             "username",
+#             "vote_target",
+#             "vote",
+#         ]
+#         read_only_fields = [
+#             "id",
+#         ]

@@ -5,17 +5,16 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.fields import GenericForeignKey
 
 
+class CountVoteMixin:
+    def count_votes(self):
+        upvote_count = self.tags.filter(vote="upvote").count()
+        downvote_count = self.tags.filter(vote="downvote").count()
+        return upvote_count - downvote_count
+
+
 class TimeTrackedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
-
-
-class Reaction(models.Model):
-    upvote = models.PositiveIntegerField(default=0)
-    downvote = models.PositiveIntegerField(default=0)
 
     class Meta:
         abstract = True
@@ -42,7 +41,7 @@ class FunFactVote(models.Model):
         return self.vote
 
 
-class FunFact(TimeTrackedModel, Reaction):
+class FunFact(TimeTrackedModel, CountVoteMixin):
     author = models.ForeignKey(User, related_name="facts", on_delete=models.CASCADE)
     fact_text = models.TextField()
     tags = GenericRelation(FunFactVote)
@@ -58,7 +57,7 @@ class FunFact(TimeTrackedModel, Reaction):
         return self.fact_text
 
 
-class FunFactComment(TimeTrackedModel):
+class FunFactComment(TimeTrackedModel, CountVoteMixin):
     author = models.ForeignKey(User, related_name="comments", on_delete=models.CASCADE)
     fact = models.ForeignKey(FunFact, related_name="comments", on_delete=models.CASCADE)
     parent = models.ForeignKey(
@@ -66,11 +65,6 @@ class FunFactComment(TimeTrackedModel):
     )
     comment_text = models.TextField()
     tags = GenericRelation(FunFactVote)
-
-    def count_votes(self):
-        upvote_count = self.votes_fact.filter(vote="upvote").count()
-        downvote_count = self.votes_fact.filter(vote="downvote").count()
-        return upvote_count - downvote_count
 
     # @property
     # def get_votes(self):

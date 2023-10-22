@@ -27,9 +27,19 @@ router.register(r"register", views.UserViewSet)
 router.register(r"users", views.UserViewSet)
 router.register(r"funfacts/(?P<fact_id>\d+)/comments/?$", views.CommentsViewSet)
 router.register(
-    r"funfacts/(?P<fact_id>\d+)/votes/?$",
-    views.VotesViewSet,
+    r"comments/(?P<comment_id>\d+)/reaction/?$",
+    views.VotesView,
+    name="comment_reaction",
 )
+router.register(
+    r"fact/(?P<comment_id>\d+)/reaction/?$",
+    views.VotesView,
+    name="fact_reaction",
+)
+# router.register(
+#     r"funfacts/(?P<fact_id>\d+)/votes/?$",
+#     views.VotesViewSet,
+# )
 # TO DO: consider adding routes for votes/comments votes/funfacts
 
 urlpatterns = [

@@ -1,14 +1,14 @@
 from django.contrib.auth.models import User
-from mow_api.models import FunFact, FunFactComment, FunFactVote
+from mow_api.models import FunFact, FunFactComment, FunFactVote  # , FunFactVote
 from mow_api.serializers import (
     FunFactSerializer,
     UserSerializer,
     FunFactCommentSerializer,
-    FunFactVoteSerializer,
-    VoteRelatedField,
 )
 from rest_framework import permissions, response, status, viewsets
 from django.shortcuts import get_object_or_404
+from rest_framework.views import APIView
+from rest_framework.exceptions import APIException
 
 
 class ReadOnlyOrAuthor(permissions.IsAuthenticatedOrReadOnly):
@@ -99,29 +99,69 @@ class CommentsViewSet(viewsets.ModelViewSet):
         serializer.save(**self.get_save_kwargs())
 
 
-class VotesViewSet(viewsets.ModelViewSet):
-    queryset = FunFactVote.objects.all()
-    serializer_class = FunFactVoteSerializer
+class VoteAlreadyExists(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = "You have already voted on this comment"
+    default_code = "already_voted"
+
+
+class VotesView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        kwargs = {}
-        kwargs["vote_target"] = self.vote_target
-        kwargs["author"] = self.author
-        kwargs["vote"] = self.vote
+    def post(self, request):
+        if request.resolver.url_name == "comment_reaction":
+            comment = get_object_or_404(FunFactComment, pk=self.kwargs["object_id"])
+            user = self.request.user
+            vote = FunFactVote.objects.filter(author=user, object_id=comment.id)
 
-    # TO DO: fix this property, consider urls
-    @property
-    def vote_target(self):
-        target_id = self.kwargs.get("target_id")
-        if target_id is None:
-            return None
-        return get_object_or_404(VoteRelatedField, pk=target_id)
+            if vote.exists():
+                raise VoteAlreadyExists
+            else:
+                FunFactVote.objects.create(
+                    author=user, content_object=comment, vote=self.vote
+                )
+                return response.Response(
+                    {"message": "successful"}, status=status.HTTP_200_OK
+                )
+        elif request.resolver.url_name == "fact_reaction":
+            fact = get_object_or_404(FunFact, pk=self.kwargs["object_id"])
+            user = self.request.user
+            vote = FunFactVote.objects.filter(author=user, object_id=fact.id)
 
-    @property
-    def author(self):
-        return self.request.user
+            if vote.exists():
+                raise VoteAlreadyExists
+            else:
+                FunFactVote.objects.create(
+                    author=user, content_object=fact, vote=self.vote
+                )
+                return response.Response(
+                    {"message": "successful"}, status=status.HTTP_200_OK
+                )
 
-    @property
-    def vote(self):
-        return self.request.data.get("vote")
+
+# class VotesViewSet(viewsets.ModelViewSet):
+#     queryset = FunFactVote.objects.all()
+#     serializer_class = FunFactVoteSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def get_queryset(self):
+#         kwargs = {}
+#         kwargs["vote_target"] = self.vote_target
+#         kwargs["author"] = self.author
+#         kwargs["vote"] = self.vote
+
+#     # TO DO: fix this property, consider urls
+#     @property
+#     def vote_target(self):
+#         target_id = self.kwargs.get("target_id")
+#         if target_id is None:
+#             return None
+#         return get_object_or_404(VoteRelatedField, pk=target_id)
+
+#     @property
+#     def author(self):
+#         return self.request.user
+
+#     @property
+#     def vote(self):
+#         return self.request.data.get("vote")
