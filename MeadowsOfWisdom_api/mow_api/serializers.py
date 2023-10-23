@@ -1,5 +1,5 @@
 from django.contrib.auth.models import Group, User
-from mow_api.models import FunFact, FunFactComment
+from mow_api.models import FunFact, FunFactComment, FunFactVote
 from rest_framework import serializers
 
 
@@ -54,7 +54,17 @@ class FunFactCommentSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="author.username", read_only=True)
     count_votes = serializers.IntegerField(read_only=True)
     # field to use on  store output of method from models which returns all votes
-    # all_votes = serializers.ReadOnlyField(source="get_votes")
+    count_votes = serializers.ReadOnlyField(source="count_votes")
+    user_reaction = serializers.SerializerMethodField()
+
+    def get_user_reaction(self, obj):
+        user = self.context["request"].user
+        if user.is_authenticated:
+            try:
+                return obj.tags.get(author=user).vote
+            except FunFactVote.DoesNotExist:
+                return None
+        return None
 
     class Meta:
         model = FunFactComment

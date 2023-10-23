@@ -70,6 +70,9 @@ class CommentsViewSet(viewsets.ModelViewSet):
         kwargs["comment_text"] = self.comment_text
         return kwargs
 
+    def get_serializer_context(self):
+        return {"request": self.request}
+
     @property
     def fact(self):
         fact_id = self.kwargs.get("fact_id")
@@ -105,63 +108,63 @@ class VoteAlreadyExists(APIException):
     default_code = "already_voted"
 
 
-class VotesView(APIView):
+class CommentVotesView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        if request.resolver.url_name == "comment_reaction":
-            comment = get_object_or_404(FunFactComment, pk=self.kwargs["object_id"])
-            user = self.request.user
-            vote = FunFactVote.objects.filter(author=user, object_id=comment.id)
+        comment = get_object_or_404(FunFactComment, pk=self.kwargs["object_id"])
+        user = self.request.user
+        vote = FunFactVote.objects.filter(author=user, object_id=comment.id)
 
-            if vote.exists():
-                raise VoteAlreadyExists
-            else:
-                FunFactVote.objects.create(
-                    author=user, content_object=comment, vote=self.vote
-                )
-                return response.Response(
-                    {"message": "successful"}, status=status.HTTP_200_OK
-                )
-        elif request.resolver.url_name == "fact_reaction":
-            fact = get_object_or_404(FunFact, pk=self.kwargs["object_id"])
-            user = self.request.user
-            vote = FunFactVote.objects.filter(author=user, object_id=fact.id)
+        if vote.exists():
+            raise VoteAlreadyExists
+        else:
+            FunFactVote.objects.create(
+                author=user, content_object=comment, vote=self.vote
+            )
+            return response.Response(
+                {"message": "successful"}, status=status.HTTP_200_OK
+            )
 
-            if vote.exists():
-                raise VoteAlreadyExists
-            else:
-                FunFactVote.objects.create(
-                    author=user, content_object=fact, vote=self.vote
-                )
-                return response.Response(
-                    {"message": "successful"}, status=status.HTTP_200_OK
-                )
+    def delte(self, request):
+        comment = get_object_or_404(FunFactComment, pk=self.kwargs["comment_id"])
+        user = self.request.user
+        vote = FunFactVote.objects.filter(author=user, comment_id=comment.id)
+
+        if vote.exists():
+            vote.delete()
+            return response.Response(
+                {"message": "successful"}, status=status.HTTP_200_OK
+            )
+        else:
+            raise VoteAlreadyExists
 
 
-# class VotesViewSet(viewsets.ModelViewSet):
-#     queryset = FunFactVote.objects.all()
-#     serializer_class = FunFactVoteSerializer
-#     permission_classes = [permissions.IsAuthenticated]
+class FactVotesView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
-#     def get_queryset(self):
-#         kwargs = {}
-#         kwargs["vote_target"] = self.vote_target
-#         kwargs["author"] = self.author
-#         kwargs["vote"] = self.vote
+    def post(self, request):
+        fact = get_object_or_404(FunFact, pk=self.kwargs["fact_id"])
+        user = self.request.user
+        vote = FunFactVote.objects.filter(author=user, fact_id=fact.id)
 
-#     # TO DO: fix this property, consider urls
-#     @property
-#     def vote_target(self):
-#         target_id = self.kwargs.get("target_id")
-#         if target_id is None:
-#             return None
-#         return get_object_or_404(VoteRelatedField, pk=target_id)
+        if vote.exists():
+            raise VoteAlreadyExists
+        else:
+            FunFactVote.objects.create(author=user, content_object=fact, vote=self.vote)
+            return response.Response(
+                {"message": "successful"}, status=status.HTTP_200_OK
+            )
 
-#     @property
-#     def author(self):
-#         return self.request.user
+    def delte(self, request):
+        fact = get_object_or_404(FunFact, pk=self.kwargs["fact_id"])
+        user = self.request.user
+        vote = FunFactVote.objects.filter(author=user, fact_id=fact.id)
 
-#     @property
-#     def vote(self):
-#         return self.request.data.get("vote")
+        if vote.exists():
+            vote.delete()
+            return response.Response(
+                {"message": "successful"}, status=status.HTTP_200_OK
+            )
+        else:
+            raise VoteAlreadyExists

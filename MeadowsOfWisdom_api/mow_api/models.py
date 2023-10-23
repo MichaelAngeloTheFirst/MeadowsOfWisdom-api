@@ -12,6 +12,11 @@ class CountVoteMixin:
         return upvote_count - downvote_count
 
 
+class UserVoteMixin:
+    def get_votes(self):
+        return self.tags.all()
+
+
 class TimeTrackedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -38,10 +43,10 @@ class FunFactVote(models.Model):
         unique_together = ["author", "content_type", "object_id"]
 
     def __str__(self) -> str:
-        return self.vote
+        return self.vote + " " + self.author.username
 
 
-class FunFact(TimeTrackedModel, CountVoteMixin):
+class FunFact(TimeTrackedModel, CountVoteMixin, UserVoteMixin):
     author = models.ForeignKey(User, related_name="facts", on_delete=models.CASCADE)
     fact_text = models.TextField()
     tags = GenericRelation(FunFactVote)
@@ -57,7 +62,7 @@ class FunFact(TimeTrackedModel, CountVoteMixin):
         return self.fact_text
 
 
-class FunFactComment(TimeTrackedModel, CountVoteMixin):
+class FunFactComment(TimeTrackedModel, CountVoteMixin, UserVoteMixin):
     author = models.ForeignKey(User, related_name="comments", on_delete=models.CASCADE)
     fact = models.ForeignKey(FunFact, related_name="comments", on_delete=models.CASCADE)
     parent = models.ForeignKey(
