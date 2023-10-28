@@ -25,6 +25,16 @@ class GroupSerializer(serializers.ModelSerializer):
 class FunFactSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="author.username")
     count_votes = serializers.IntegerField(read_only=True)
+    user_reaction = serializers.SerializerMethodField()
+
+    def get_user_reaction(self, obj):
+        user = self.context["request"].user
+        if user.is_authenticated:
+            try:
+                return obj.tags.get(author=user).vote
+            except FunFactVote.DoesNotExist:
+                return None
+        return None
 
     class Meta:
         model = FunFact
@@ -33,8 +43,7 @@ class FunFactSerializer(serializers.ModelSerializer):
             "username",
             "fact_text",
             "count_votes",
-            "upvote",
-            "downvote",
+            "user_reaction",
             "created_at",
             "updated_at",
         ]
@@ -53,8 +62,6 @@ class FunFactCommentSerializer(serializers.ModelSerializer):
     parent_id = serializers.IntegerField(source="parent.id", allow_null=True)
     username = serializers.CharField(source="author.username", read_only=True)
     count_votes = serializers.IntegerField(read_only=True)
-    # field to use on  store output of method from models which returns all votes
-    count_votes = serializers.ReadOnlyField(source="count_votes")
     user_reaction = serializers.SerializerMethodField()
 
     def get_user_reaction(self, obj):
@@ -73,7 +80,7 @@ class FunFactCommentSerializer(serializers.ModelSerializer):
             "parent_id",
             "username",
             "count_votes",
-            "all_votes",
+            "user_reaction",
             "comment_text",
             "created_at",
             "updated_at",
@@ -94,20 +101,3 @@ class VoteRelatedField(serializers.RelatedField):
         else:
             raise Exception("Unexpected type of tagged object")
         return serializer.data
-
-
-# class FunFactVoteSerializer(serializers.ModelSerializer):
-#     username = serializers.CharField(source="author.username", read_only=True)
-#     vote_target = VoteRelatedField(read_only=True)
-
-#     class Meta:
-#         model = FunFactVote
-#         fields = [
-#             "id",
-#             "username",
-#             "vote_target",
-#             "vote",
-#         ]
-#         read_only_fields = [
-#             "id",
-#         ]

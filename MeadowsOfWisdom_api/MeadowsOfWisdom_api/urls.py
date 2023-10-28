@@ -26,21 +26,6 @@ router.register(r"funfacts", views.FunFactViewSet)
 router.register(r"register", views.UserViewSet)
 router.register(r"users", views.UserViewSet)
 router.register(r"funfacts/(?P<fact_id>\d+)/comments/?$", views.CommentsViewSet)
-# router.register(
-#     r"comments/(?P<comment_id>\d+)/reaction/?$",
-#     views.VotesView,
-#     basename="comment_reaction",
-# )
-# router.register(
-#     r"fact/(?P<comment_id>\d+)/reaction/?$",
-#     views.VotesView,
-#     basename="fact_reaction",
-# )
-# router.register(
-#     r"funfacts/(?P<fact_id>\d+)/votes/?$",
-#     views.VotesViewSet,
-# )
-# TO DO: consider adding routes for votes/comments votes/funfacts
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -50,4 +35,14 @@ urlpatterns = [
     path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     re_path(r"api/token/refresh/?", TokenRefreshView.as_view(), name="token_refresh"),
     re_path(r"api/token/?", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    re_path(
+        r"api/(?P<comment_id>\d+)/comments/(?P<vote_value>[a-z]+)/votes/?$",
+        view=views.CommentVotesView.as_view(),
+        name="comment_votes",
+    ),
+    re_path(
+        r"api/(?P<fact_id>\d+)/facts/(?P<vote_value>[a-z]+)/votes/?$",
+        view=views.FactVotesView.as_view(),
+        name="fact_votes",
+    ),
 ]

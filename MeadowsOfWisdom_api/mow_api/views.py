@@ -9,6 +9,7 @@ from rest_framework import permissions, response, status, viewsets
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.exceptions import APIException
+from django.db import IntegrityError
 
 
 class ReadOnlyOrAuthor(permissions.IsAuthenticatedOrReadOnly):
@@ -102,42 +103,63 @@ class CommentsViewSet(viewsets.ModelViewSet):
         serializer.save(**self.get_save_kwargs())
 
 
+# TO DO: Fix logic do not use below exception everywhere!
 class VoteAlreadyExists(APIException):
     status_code = status.HTTP_409_CONFLICT
     default_detail = "You have already voted on this comment"
     default_code = "already_voted"
 
 
+class VoteNotFound(APIException):
+    status_code = status.HTTP_404_NOT_FOUND
+    default_detail = "There is no vote for this comment"
+    default_code = "vote_not_found"
+
+
 class CommentVotesView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
-        comment = get_object_or_404(FunFactComment, pk=self.kwargs["object_id"])
+    def post(self, request, **kwargs):
+        comment = get_object_or_404(FunFactComment, pk=kwargs["comment_id"])
         user = self.request.user
-        vote = FunFactVote.objects.filter(author=user, object_id=comment.id)
+        vote_value = kwargs["vote_value"]
 
-        if vote.exists():
-            raise VoteAlreadyExists
-        else:
+        try:
             FunFactVote.objects.create(
-                author=user, content_object=comment, vote=self.vote
+                author=user, tagged_object=comment, vote=vote_value
             )
             return response.Response(
                 {"message": "successful"}, status=status.HTTP_200_OK
             )
+        except IntegrityError:
+            raise VoteAlreadyExists
 
-    def delte(self, request):
+    def delete(self, request, **kwargs):
+        comment = get_object_or_404(FunFactComment, pk=kwargs["comment_id"])
+        user = self.request.user
+        try:
+            vote = comment.tags.get(author=user)
+        except FunFactVote.DoesNotExist:
+            raise VoteNotFound
+
+        vote.delete()
+        return response.Response(
+            {"message": "record deleted"}, status=status.HTTP_200_OK
+        )
+
+    def patch(self, request, **kwargs):
         comment = get_object_or_404(FunFactComment, pk=self.kwargs["comment_id"])
         user = self.request.user
-        vote = FunFactVote.objects.filter(author=user, comment_id=comment.id)
+        try:
+            vote = comment.tags.get(author=user)
+        except FunFactVote.DoesNotExist:
+            raise VoteNotFound
 
-        if vote.exists():
-            vote.delete()
-            return response.Response(
-                {"message": "successful"}, status=status.HTTP_200_OK
-            )
-        else:
-            raise VoteAlreadyExists
+        # vote = get_object_or_404(FunFactVote, author=user, tagged_object=comment)
+        vote_value = self.kwargs["vote_value"]
+        vote.vote = vote_value
+        vote.save()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class FactVotesView(APIView):
@@ -146,25 +168,34 @@ class FactVotesView(APIView):
     def post(self, request):
         fact = get_object_or_404(FunFact, pk=self.kwargs["fact_id"])
         user = self.request.user
-        vote = FunFactVote.objects.filter(author=user, fact_id=fact.id)
+        vote_value = self.kwargs["vote_value"]
 
-        if vote.exists():
-            raise VoteAlreadyExists
-        else:
-            FunFactVote.objects.create(author=user, content_object=fact, vote=self.vote)
+        try:
+            FunFactVote.objects.create(
+                author=user, content_object=fact, vote=vote_value
+            )
             return response.Response(
                 {"message": "successful"}, status=status.HTTP_200_OK
             )
+        except IntegrityError:
+            raise VoteAlreadyExists
 
-    def delte(self, request):
+    def delete(self, request):
         fact = get_object_or_404(FunFact, pk=self.kwargs["fact_id"])
         user = self.request.user
-        vote = FunFactVote.objects.filter(author=user, fact_id=fact.id)
+        vote = get_object_or_404(FunFactVote, author=user, tagged_object=fact)
+        vote.delete()
+        return response.Response(
+            {"message": "record deleted"}, status=status.HTTP_200_OK
+        )
 
-        if vote.exists():
-            vote.delete()
-            return response.Response(
-                {"message": "successful"}, status=status.HTTP_200_OK
-            )
-        else:
-            raise VoteAlreadyExists
+    def patch(self, request):
+        fact = get_object_or_404(FunFact, pk=self.kwargs["fact_id"])
+        user = self.request.user
+        vote = get_object_or_404(FunFactVote, author=user, tagged_object=fact)
+        vote_value = self.kwargs["vote_value"]
+        vote.vote = vote_value
+        vote.save()
+        return response.Response(
+            {"message": "record updated"}, status=status.HTTP_200_OK
+        )
