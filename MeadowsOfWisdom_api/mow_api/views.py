@@ -1,7 +1,15 @@
 from django.contrib.auth.models import User
-from mow_api.models import FunFact
-from mow_api.serializers import (FunFactSerializer, UserSerializer)
+from mow_api.models import FunFact, FunFactComment, FunFactVote  # , FunFactVote
+from mow_api.serializers import (
+    FunFactSerializer,
+    UserSerializer,
+    FunFactCommentSerializer,
+)
 from rest_framework import permissions, response, status, viewsets
+from django.shortcuts import get_object_or_404
+from rest_framework.views import APIView
+from rest_framework.exceptions import APIException
+from django.db import IntegrityError
 
 
 class ReadOnlyOrAuthor(permissions.IsAuthenticatedOrReadOnly):
@@ -44,3 +52,150 @@ class FunFactViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+
+class CommentsViewSet(viewsets.ModelViewSet):
+    queryset = FunFactComment.objects.all()
+    serializer_class = FunFactCommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    # methods from other kwargs, add case if  user is diff than author
+    def get_queryset(self):
+        return super().get_queryset().filter(fact=self.kwargs["fact_id"])
+
+    def get_save_kwargs(self):
+        kwargs = {}
+        kwargs["fact"] = self.fact
+        kwargs["author"] = self.author
+        kwargs["parent"] = self.parent
+        kwargs["comment_text"] = self.comment_text
+        return kwargs
+
+    def get_serializer_context(self):
+        return {"request": self.request}
+
+    @property
+    def fact(self):
+        fact_id = self.kwargs.get("fact_id")
+        if fact_id is None:
+            return None
+        return get_object_or_404(FunFact, pk=fact_id)
+
+    @property
+    def author(self):
+        return self.request.user
+
+    @property
+    def parent(self):
+        parent_id = self.request.data.get("parent_id")
+        print("parent_id", parent_id)
+        if parent_id is None:
+            return None
+        if parent_id == "0":
+            return None
+        return get_object_or_404(FunFactComment, pk=parent_id)
+
+    @property
+    def comment_text(self):
+        return self.request.data.get("comment_text")
+
+    def perform_create(self, serializer):
+        serializer.save(**self.get_save_kwargs())
+
+
+# TO DO: Fix logic do not use below exception everywhere!
+class VoteAlreadyExists(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = "You have already voted on this comment"
+    default_code = "already_voted"
+
+
+class VoteNotFound(APIException):
+    status_code = status.HTTP_404_NOT_FOUND
+    default_detail = "There is no vote for this comment"
+    default_code = "vote_not_found"
+
+
+class CommentVotesView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, **kwargs):
+        comment = get_object_or_404(FunFactComment, pk=kwargs["comment_id"])
+        user = self.request.user
+        vote_value = kwargs["vote_value"]
+
+        try:
+            FunFactVote.objects.create(
+                author=user, tagged_object=comment, vote=vote_value
+            )
+            return response.Response(
+                {"message": "successful"}, status=status.HTTP_200_OK
+            )
+        except IntegrityError:
+            raise VoteAlreadyExists
+
+    def delete(self, request, **kwargs):
+        comment = get_object_or_404(FunFactComment, pk=kwargs["comment_id"])
+        user = self.request.user
+        try:
+            vote = comment.tags.get(author=user)
+        except FunFactVote.DoesNotExist:
+            raise VoteNotFound
+
+        vote.delete()
+        return response.Response(
+            {"message": "record deleted"}, status=status.HTTP_200_OK
+        )
+
+    def patch(self, request, **kwargs):
+        comment = get_object_or_404(FunFactComment, pk=self.kwargs["comment_id"])
+        user = self.request.user
+        try:
+            vote = comment.tags.get(author=user)
+        except FunFactVote.DoesNotExist:
+            raise VoteNotFound
+
+        # vote = get_object_or_404(FunFactVote, author=user, tagged_object=comment)
+        vote_value = self.kwargs["vote_value"]
+        vote.vote = vote_value
+        vote.save()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FactVotesView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        fact = get_object_or_404(FunFact, pk=self.kwargs["fact_id"])
+        user = self.request.user
+        vote_value = self.kwargs["vote_value"]
+
+        try:
+            FunFactVote.objects.create(
+                author=user, content_object=fact, vote=vote_value
+            )
+            return response.Response(
+                {"message": "successful"}, status=status.HTTP_200_OK
+            )
+        except IntegrityError:
+            raise VoteAlreadyExists
+
+    def delete(self, request):
+        fact = get_object_or_404(FunFact, pk=self.kwargs["fact_id"])
+        user = self.request.user
+        vote = get_object_or_404(FunFactVote, author=user, tagged_object=fact)
+        vote.delete()
+        return response.Response(
+            {"message": "record deleted"}, status=status.HTTP_200_OK
+        )
+
+    def patch(self, request):
+        fact = get_object_or_404(FunFact, pk=self.kwargs["fact_id"])
+        user = self.request.user
+        vote = get_object_or_404(FunFactVote, author=user, tagged_object=fact)
+        vote_value = self.kwargs["vote_value"]
+        vote.vote = vote_value
+        vote.save()
+        return response.Response(
+            {"message": "record updated"}, status=status.HTTP_200_OK
+        )
