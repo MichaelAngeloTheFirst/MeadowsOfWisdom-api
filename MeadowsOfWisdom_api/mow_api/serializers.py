@@ -61,6 +61,7 @@ class FunFactSerializer(serializers.ModelSerializer):
 class FunFactCommentSerializer(serializers.ModelSerializer):
     parent_id = serializers.IntegerField(source="parent.id", allow_null=True)
     username = serializers.CharField(source="author.username", read_only=True)
+    user_id = serializers.IntegerField(source="author.id", read_only=True)
     count_votes = serializers.IntegerField(read_only=True)
     user_reaction = serializers.SerializerMethodField()
 
@@ -79,6 +80,7 @@ class FunFactCommentSerializer(serializers.ModelSerializer):
             "id",
             "parent_id",
             "username",
+            "user_id",
             "count_votes",
             "user_reaction",
             "comment_text",
