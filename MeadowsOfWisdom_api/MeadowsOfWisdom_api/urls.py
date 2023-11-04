@@ -25,7 +25,13 @@ router = routers.DefaultRouter(trailing_slash=False)
 router.register(r"funfacts", views.FunFactViewSet)
 router.register(r"register", views.UserViewSet)
 router.register(r"users", views.UserViewSet)
-router.register(r"funfacts/(?P<fact_id>\d+)/comments/?$", views.CommentsViewSet)
+router.register(
+    r"funfacts/(?P<fact_id>\d+)/comments",
+    views.CommentsViewSet,
+)
+# router.register(
+#     r"funfacts/(?P<fact_id>\d+)/comments/(?P<comment_id>\d+)?$", views.CommentsViewSet
+# )
 
 urlpatterns = [
     path("admin/", admin.site.urls),

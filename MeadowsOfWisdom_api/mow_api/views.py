@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.http import Http404
 from mow_api.models import FunFact, FunFactComment, FunFactVote  # , FunFactVote
 from mow_api.serializers import (
     FunFactSerializer,
@@ -63,6 +64,9 @@ class CommentsViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return super().get_queryset().filter(fact=self.kwargs["fact_id"])
 
+    # def get_object(self):
+    #     return super().get_queryset().filter(pk=self.kwargs["pk"])
+
     def get_save_kwargs(self):
         kwargs = {}
         kwargs["fact"] = self.fact
@@ -101,6 +105,19 @@ class CommentsViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(**self.get_save_kwargs())
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            self.perform_destroy(instance)
+        except Http404:
+            pass
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
+    # def perform_destroy(self):
+    #     # fact = get_object_or_404(FunFact, pk=self.kwargs["fact_id"])
+    #     comment = get_object_or_404(FunFactComment, pk=self.kwargs["comment_id"])
+    #     return super().perform_destroy(comment)
 
 
 # TO DO: Fix logic do not use below exception everywhere!
