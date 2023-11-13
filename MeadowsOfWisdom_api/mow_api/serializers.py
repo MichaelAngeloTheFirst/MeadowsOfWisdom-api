@@ -23,7 +23,8 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class FunFactSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source="author.username")
+    username = serializers.CharField(source="author.username", read_only=True)
+    user_id = serializers.IntegerField(source="author.id", read_only=True)
     count_votes = serializers.IntegerField(read_only=True)
     user_reaction = serializers.SerializerMethodField()
 
@@ -41,6 +42,7 @@ class FunFactSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "username",
+            "user_id",
             "fact_text",
             "count_votes",
             "user_reaction",
@@ -49,7 +51,6 @@ class FunFactSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
-            "username",
             "count_votes",
             "upvote",
             "downvote",

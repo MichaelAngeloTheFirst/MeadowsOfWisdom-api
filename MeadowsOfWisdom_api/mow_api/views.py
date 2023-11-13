@@ -51,8 +51,26 @@ class FunFactViewSet(viewsets.ModelViewSet):
     serializer_class = FunFactSerializer
     permission_classes = [ReadOnlyOrAuthor]
 
+    def get_serializer_context(self):
+        return {"request": self.request}
+
+    @property
+    def author(self):
+        return self.request.user
+
+    @property
+    def fact_text(self):
+        return self.request.data.get("fact_text")
+
+    def get_save_kwargs(self):
+        kwargs = {}
+        kwargs["author"] = self.author
+        kwargs["fact_text"] = self.fact_text
+        return kwargs
+
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        print(self.request.user)
+        serializer.save(**self.get_save_kwargs())
 
 
 class CommentsViewSet(viewsets.ModelViewSet):
