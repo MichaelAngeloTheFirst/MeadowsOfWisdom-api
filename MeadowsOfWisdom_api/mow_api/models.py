@@ -71,9 +71,5 @@ class FunFactComment(TimeTrackedModel, CountVoteMixin, UserVoteMixin):
     comment_text = models.TextField()
     tags = GenericRelation(FunFactVote)
 
-    # @property
-    # def get_votes(self):
-    #     return self.votes_fact.all()
-
     def __str__(self) -> str:
         return self.comment_text

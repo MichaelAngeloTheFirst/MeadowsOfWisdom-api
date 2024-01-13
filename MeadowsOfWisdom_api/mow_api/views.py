@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.http import Http404
-from mow_api.models import FunFact, FunFactComment, FunFactVote  # , FunFactVote
+from mow_api.models import FunFact, FunFactComment, FunFactVote
 from mow_api.serializers import (
     FunFactSerializer,
     UserSerializer,
@@ -78,12 +78,8 @@ class CommentsViewSet(viewsets.ModelViewSet):
     serializer_class = FunFactCommentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # methods from other kwargs, add case if  user is diff than author
     def get_queryset(self):
         return super().get_queryset().filter(fact=self.kwargs["fact_id"])
-
-    # def get_object(self):
-    #     return super().get_queryset().filter(pk=self.kwargs["pk"])
 
     def get_save_kwargs(self):
         kwargs = {}
@@ -132,13 +128,7 @@ class CommentsViewSet(viewsets.ModelViewSet):
             pass
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    # def perform_destroy(self):
-    #     # fact = get_object_or_404(FunFact, pk=self.kwargs["fact_id"])
-    #     comment = get_object_or_404(FunFactComment, pk=self.kwargs["comment_id"])
-    #     return super().perform_destroy(comment)
 
-
-# TO DO: Fix logic do not use below exception everywhere!
 class VoteAlreadyExists(APIException):
     status_code = status.HTTP_409_CONFLICT
     default_detail = "You have already voted on this comment"
@@ -190,7 +180,6 @@ class CommentVotesView(APIView):
         except FunFactVote.DoesNotExist:
             raise VoteNotFound
 
-        # vote = get_object_or_404(FunFactVote, author=user, tagged_object=comment)
         vote_value = self.kwargs["vote_value"]
         vote.vote = vote_value
         vote.save()
@@ -207,9 +196,7 @@ class FactVotesView(APIView):
 
         try:
             print("fact", fact)
-            FunFactVote.objects.create(
-                author=user, tagged_object=fact, vote=vote_value
-            )
+            FunFactVote.objects.create(author=user, tagged_object=fact, vote=vote_value)
             return response.Response(
                 {"message": "successful"}, status=status.HTTP_200_OK
             )

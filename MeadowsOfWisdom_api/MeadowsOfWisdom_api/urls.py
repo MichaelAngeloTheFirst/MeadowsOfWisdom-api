@@ -1,19 +1,3 @@
-"""
-URL configuration for MeadowsOfWisdom_api project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import include, path, re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
@@ -22,16 +6,14 @@ from rest_framework import routers
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 router = routers.DefaultRouter(trailing_slash=False)
-router.register(r"funfacts", views.FunFactViewSet)
-router.register(r"register", views.UserViewSet)
-router.register(r"users", views.UserViewSet)
+router.register(r"funfacts", views.FunFactViewSet, basename="funfacts_test")
+router.register(r"register", views.UserViewSet, basename="register_test")
+router.register(r"users", views.UserViewSet, basename="user_test")
 router.register(
     r"funfacts/(?P<fact_id>\d+)/comments",
     views.CommentsViewSet,
+    basename="comments_test",
 )
-# router.register(
-#     r"funfacts/(?P<fact_id>\d+)/comments/(?P<comment_id>\d+)?$", views.CommentsViewSet
-# )
 
 urlpatterns = [
     path("admin/", admin.site.urls),
